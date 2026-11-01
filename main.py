@@ -1,10 +1,14 @@
 import argparse
 import os
+from collections import Counter
 from datetime import datetime
 
 from snapshot import take_snapshot
 from baseline import save_baseline, load_baseline
 from compare import compare
+from patterns import analyze
+from alerts import raise_alert
+from monitor import run_monitor
 
 
 def show(value):
@@ -48,37 +52,38 @@ def cmd_check():
         return 2
 
     changes = compare(payload["snapshot"], take_snapshot())
-
     if not changes:
         print("RESULT: PASS - registry matches the baseline")
         write_log(f"[{now}] INTEGRITY PASS: no changes")
         return 0
 
     print(f"RESULT: FAIL - {len(changes)} change(s) detected\n")
+    counts = Counter()
     for c in changes:
-        label = f"[{c['type']}]"
-        line = f"{label:14} [{c['category']}] {c['key']}"
-        if c["value_name"]:
-            line += f" -> {c['value_name']}"
-        print(line)
-        if c["value_name"]:
-            print(f"               old: {show(c['old'])}")
-            print(f"               new: {show(c['new'])}")
-        write_log(f"[{now}] {c['type']} | {c['category']} | {c['key']} | "
-                  f"{c['value_name']} | old={show(c['old'])} | new={show(c['new'])}")
+        finding = analyze(c)
+        counts[finding["severity"]] += 1
+        raise_alert(c, finding)
+        write_log(f"[{now}] {finding['severity']} | {c['type']} | {c['category']} | "
+                  f"{c['key']} | {c['value_name']} | old={show(c['old'])} | new={show(c['new'])}")
+
+    print("Severity summary: " + ", ".join(f"{k}: {v}" for k, v in counts.items()))
     return 1
 
 
 def main():
-    parser = argparse.ArgumentParser(description="RegWatch registry integrity checker")
+    parser = argparse.ArgumentParser(description="RegWatch registry monitoring toolkit")
     parser.add_argument("--baseline", action="store_true", help="capture a new baseline")
-    parser.add_argument("--check", action="store_true", help="compare current state to baseline")
+    parser.add_argument("--check", action="store_true", help="one-time integrity check")
+    parser.add_argument("--monitor", action="store_true", help="live monitoring (polling)")
+    parser.add_argument("--interval", type=int, default=10, help="seconds between checks")
     args = parser.parse_args()
 
     if args.baseline:
         raise SystemExit(cmd_baseline())
     if args.check:
         raise SystemExit(cmd_check())
+    if args.monitor:
+        raise SystemExit(run_monitor(args.interval))
     parser.print_help()
 
 

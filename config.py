@@ -26,4 +26,10 @@ MONITORED_KEYS = [
 
     # Safe test key (use this for all simulations)
     {"hive": HKCU, "path": r"Software\RegWatchTest", "category": "Test"},
+
+    {"hive": HKCU, "path": r"Software\RegWatchTest\Run", "category": "Autorun"},
+    {"hive": HKCU, "path": r"Software\RegWatchTest\Security", "category": "Security"},
+    {"hive": HKCU, "path": r"Software\RegWatchTest\Winlogon", "category": "Shell"},
+    {"hive": HKCU, "path": r"Software\RegWatchTest\Policies", "category": "UAC"},
+    {"hive": HKCU, "path": r"Software\RegWatchTest\UACBypass", "category": "UAC Bypass"},
 ]
