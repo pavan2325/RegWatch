@@ -9,6 +9,7 @@ from compare import compare
 from patterns import analyze
 from alerts import raise_alert
 from monitor import run_monitor
+from report import build_report
 
 
 def show(value):
@@ -76,6 +77,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="one-time integrity check")
     parser.add_argument("--monitor", action="store_true", help="live monitoring (polling)")
     parser.add_argument("--interval", type=int, default=10, help="seconds between checks")
+    parser.add_argument("--report", action="store_true", help="generate the change-analysis report")
     args = parser.parse_args()
 
     if args.baseline:
@@ -84,6 +86,8 @@ def main():
         raise SystemExit(cmd_check())
     if args.monitor:
         raise SystemExit(run_monitor(args.interval))
+    if args.report:
+        raise SystemExit(build_report())
     parser.print_help()
 
 

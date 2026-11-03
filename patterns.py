@@ -3,6 +3,9 @@ import re
 
 SUSPICIOUS_DIRS = ["\\appdata\\", "\\temp\\", "\\downloads\\",
                    "\\users\\public\\", "\\programdata\\"]
+TRUSTED_PATHS = ["\\microsoft\\teams\\", "\\microsoft\\onedrive\\",
+                 "\\discord\\", "\\microsoft\\edge\\"]
+                 
 
 DEFENDER_DISABLE_VALUES = {
     "disableantispyware", "disableantivirus", "disablerealtimemonitoring",
@@ -55,7 +58,9 @@ def analyze(change):
         if ctype in ("ADDED", "MODIFIED"):
             exe = extract_exe(new)
             label = "New" if ctype == "ADDED" else "Modified"
-            if any(d in exe.lower() for d in SUSPICIOUS_DIRS):
+            low = exe.lower()
+            trusted = any(t in low for t in TRUSTED_PATHS)
+            if any(d in low for d in SUSPICIOUS_DIRS) and not trusted:
                 return _result("High", "Autorun from suspicious location",
                                f"{label} autorun entry detected: {exe}")
             return _result("Medium", "New autorun entry",
